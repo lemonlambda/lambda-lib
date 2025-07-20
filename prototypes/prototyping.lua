@@ -45,3 +45,24 @@ function recipe.new(name)
 
   return new_recipe
 end
+
+local entity = {}
+entity.__index = {}
+
+function lambda.entity(attributes)
+  prechecks(attributes)
+
+  attributes.type = "assembling-machine" or attributes.type
+
+  table.insert(lambda._to_extend, attributes)
+
+  return entity.new(attributes.name)
+end
+
+function entity.new(name)
+  local new_entity = setmetatable({}, entity)
+
+  entity.name = name
+
+  return new_entity
+end
