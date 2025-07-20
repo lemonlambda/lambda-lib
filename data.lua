@@ -1,3 +1,7 @@
 if not lambda then lambda = {} end
 
-requires("prototypes.prototyping")
+lambda._to_extend = {}
+
+require("prototypes.prototyping")
+
+require("testing")

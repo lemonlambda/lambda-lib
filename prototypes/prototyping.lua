@@ -1,7 +1,7 @@
 local item = {}
 item.__index = item
 
-local function prechecks(attributse)
+local function prechecks(attributes)
   if not attributes.name then
     error("Item has no name")
   end
@@ -12,7 +12,7 @@ function lambda.item(attributes)
 
   attributes.type = "item"
 
-  data:extend{attributes}
+  table.insert(lambda._to_extend, attributes)
 
   return item.new(attributes.name)
 end
@@ -31,9 +31,9 @@ recipe.__index = {}
 function lambda.recipe(attributes)
   prechecks(attributes)
 
-  attributes.type = "item"
+  attributes.type = "recipe"
 
-  data:extend{attributes}
+  table.insert(lambda._to_extend, attributes)
 
   return recipe.new(attributes.name)
 end
