@@ -10,7 +10,7 @@ end
 function lambda.item(attributes)
   prechecks(attributes)
 
-  attributes.type = "item"
+  attributes.type = "item" or attributes.type
 
   table.insert(lambda._to_extend, attributes)
 
@@ -31,7 +31,7 @@ recipe.__index = {}
 function lambda.recipe(attributes)
   prechecks(attributes)
 
-  attributes.type = "recipe"
+  attributes.type = "recipe" or attributes.type
 
   table.insert(lambda._to_extend, attributes)
 
