@@ -1,4 +1,8 @@
-if not lambda._compound_entity_pairs then lambda._compound_entity_pairs = {} end
+lambda.on_event(lambda.defines.events.on_init, function()
+  if not storage.lambda_compound_entity_pairs then
+    storage.lambda_compound_entity_pairs = {}
+  end
+end)
 
 function lambda.register_compound_entities()
   local info = lambda.get_smuggled_data("compound-info")
@@ -9,7 +13,7 @@ function lambda.register_compound_entities()
       
       local position = event.entity.position
 
-      lambda._compound_entity_pairs[event.entity.unit_number] = {}
+      storage.lambda_compound_entity_pairs[event.entity.unit_number] = {}
 
       for _, info in pairs(children) do
         local new_position = position
@@ -28,7 +32,7 @@ function lambda.register_compound_entities()
           force = "player"
         }
 
-        table.insert(lambda._compound_entity_pairs[event.entity.unit_number], new_entity)
+        storage.lambda_compound_entity_pairs[event.entity.unit_number][new_entity.unit_number] = new_entity
       end
     end)
 
@@ -36,11 +40,11 @@ function lambda.register_compound_entities()
       if not event.entity.valid or machine ~= event.entity.name then return end
 
       -- Check if the thing exists
-      if not lambda._compound_entity_pairs[event.entity.unit_number] then
+      if not storage.lambda_compound_entity_pairs[event.entity.unit_number] then
         return
       end
 
-      for _, child in pairs(lambda._compound_entity_pairs[event.entity.unit_number]) do
+      for _, child in pairs(storage.lambda_compound_entity_pairs[event.entity.unit_number]) do
         if child and child.valid then
           child.destroy()
         end
@@ -49,9 +53,52 @@ function lambda.register_compound_entities()
       end
     end)
 
-    -- lambda.on_event(lambda.defines.events.on_gui_opened, function(event)
-    --   return
-    -- end)
+    lambda.on_event(lambda.defines.events.on_gui_opened, function(event)
+      if not event.entity or not event.entity.valid or not machine == event.entity.name then return end
+      
+      local player = game.players[event.player_index]
+      local entity = event.entity
+
+      if player.gui.relative["compound-entity-children"] then
+        player.gui.relative["compound-entity-children"].destroy()
+      end
+      if not storage.lambda_compound_entity_pairs[event.entity.unit_number] then
+        return
+      end
+      local root = player.gui.relative.add{
+        type = "frame",
+        name = "compound-entity-children",
+        caption = "Children",
+        direction = "vertical",
+        anchor = {
+          gui = defines.relative_gui_type.assembling_machine_gui,
+          position = defines.relative_gui_position.right
+        },
+      }
+
+
+      for _, info in pairs(storage.lambda_compound_entity_pairs[event.entity.unit_number]) do
+        root.add{
+          type = "button",
+          name = "open-compound-entity-child-" .. info.unit_number,
+          caption = {"", "Open ", {"entity-name." .. info.name}, " gui"},
+          tags = {
+            unit_number = entity.unit_number,
+            child_unit_number = info.unit_number,
+          },
+        }
+      end
+      
+      return
+    end)
+
+    script.on_event(defines.events.on_gui_click, function(event)
+      local player = game.players[event.player_index]
+      if not ((string.find(event.element.name, "open-compound-entity-child", 1, true) or -1) >= 0) then return end
+      if not storage.lambda_compound_entity_pairs[event.element.tags.unit_number] then return end
+
+      player.opened = storage.lambda_compound_entity_pairs[event.element.tags.unit_number][event.element.tags.child_unit_number]
+    end)
   end
 end
 
