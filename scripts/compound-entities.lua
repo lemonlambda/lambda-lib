@@ -2,6 +2,9 @@ lambda.on_event(lambda.defines.events.on_init, function()
   if not storage.lambda_compound_entity_pairs then
     storage.lambda_compound_entity_pairs = {}
   end
+  if not storage.lambda_compound_entity_gui_pairs then
+    storage.lambda_compound_entity_gui_pairs = {}
+  end
 end)
 
 function lambda.register_compound_entities()
@@ -14,6 +17,7 @@ function lambda.register_compound_entities()
       local position = event.entity.position
 
       storage.lambda_compound_entity_pairs[event.entity.unit_number] = {}
+      storage.lambda_compound_entity_gui_pairs[event.entity.unit_number] = {}
 
       for _, info in pairs(children) do
         local new_position = position
@@ -33,6 +37,9 @@ function lambda.register_compound_entities()
         }
 
         storage.lambda_compound_entity_pairs[event.entity.unit_number][new_entity.unit_number] = new_entity
+        if info.enable_gui then
+          storage.lambda_compound_entity_gui_pairs[event.entity.unit_number][new_entity.unit_number] = new_entity
+        end
       end
     end)
 
@@ -51,6 +58,13 @@ function lambda.register_compound_entities()
 
         child = nil
       end
+      for _, child in pairs(storage.lambda_compound_entity_gui_pairs[event.entity.unit_number]) do
+        if child and child.valid then
+          child.destroy()
+        end
+
+        child = nil
+      end
     end)
 
     lambda.on_event(lambda.defines.events.on_gui_opened, function(event)
@@ -58,9 +72,12 @@ function lambda.register_compound_entities()
       
       local player = game.players[event.player_index]
       local entity = event.entity
-
+      
       if player.gui.relative["compound-entity-children"] then
         player.gui.relative["compound-entity-children"].destroy()
+      end
+      if not storage.lambda_compound_entity_gui_pairs[event.entity.unit_number] then
+        return
       end
       if not storage.lambda_compound_entity_pairs[event.entity.unit_number] then
         return
@@ -77,7 +94,7 @@ function lambda.register_compound_entities()
       }
 
 
-      for _, info in pairs(storage.lambda_compound_entity_pairs[event.entity.unit_number]) do
+      for _, info in pairs(storage.lambda_compound_entity_gui_pairs[event.entity.unit_number]) do
         root.add{
           type = "button",
           name = "open-compound-entity-child-" .. info.unit_number,
