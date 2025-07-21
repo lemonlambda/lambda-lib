@@ -16,14 +16,18 @@ lambda._event_match = {
     defines.events.on_robot_mined_entity,
     defines.events.on_entity_died,
     defines.events.script_raised_destroy
-  }
+  },
+  ["on_gui_opened"] = {
+    defines.events.on_gui_opened
+  },
 }
 
 if not lambda.defines then lambda.defines = {} end
 
 lambda.defines.events = {
   on_built = "on_built",
-  on_removed = "on_removed"
+  on_removed = "on_removed",
+  on_gui_opened = "on_gui_opened",
 }
 
 function lambda.on_event(event_name, func)
@@ -34,8 +38,10 @@ local function add_handler(event_name)
   log(event_name)
   for _, event_definition in pairs(lambda._event_match[event_name]) do
     script.on_event(event_definition, function(event)
-      for _, func in pairs(lambda._events[event_name]) do
-        func(event)
+      if lambda._events[event_name] ~= nil then
+        for _, func in pairs(lambda._events[event_name]) do
+          func(event)
+        end
       end
     end)
   end
@@ -43,3 +49,4 @@ end
 
 add_handler(lambda.defines.events.on_built)
 add_handler(lambda.defines.events.on_removed)
+add_handler(lambda.defines.events.on_gui_opened)
