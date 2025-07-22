@@ -7,14 +7,22 @@ lambda.on_event(lambda.defines.events.on_init, function()
   end
 end)
 
-if not lambda._gui_functions then lambda._gui_functions = {} end
+if not lambda._compound_functions then lambda._compound_functions = {} end
 
-function lambda.register_compound_gui_function(name, func)
-  lambda._gui_functions[name] = func
+function lambda.register_compound_function(name, func)
+  lambda._compound_functions[name] = func
 end
 
-function lambda.get_compound_gui_function(name)
-  return lambda._gui_functions[name]
+function lambda.get_compound_function(name)
+  return lambda._compound_functions[name]
+end
+
+local function match_entity_gui_type(name)
+  if name == "rocket-silo" then
+    return defines.relative_gui_type.rocket_silo_gui
+  end
+
+  return defines.relative_gui_type.assembling_machine_gui
 end
 
 function lambda.register_compound_entities()
@@ -48,7 +56,7 @@ function lambda.register_compound_entities()
 
         storage.lambda_compound_entity_pairs[event.entity.unit_number][new_entity.unit_number] = new_entity
         if info.enable_gui then
-          storage.lambda_compound_entity_gui_pairs[event.entity.unit_number][new_entity.unit_number] = {new_entity, info.gui_function_name}
+          storage.lambda_compound_entity_gui_pairs[event.entity.unit_number][new_entity.unit_number] = {entity = new_entity, info = info}
         end
       end
     end)
@@ -95,24 +103,24 @@ function lambda.register_compound_entities()
       local root = player.gui.relative.add{
         type = "frame",
         name = "compound-entity-children",
-        caption = "Children",
+        caption = {"", {"entity-name." .. entity.name}, " Components"},
         direction = "vertical",
         anchor = {
-          gui = defines.relative_gui_type.assembling_machine_gui,
+          gui = match_entity_gui_type(entity.type),
           position = defines.relative_gui_position.right
         },
       }
 
 
       for _, gui_child in pairs(storage.lambda_compound_entity_gui_pairs[event.entity.unit_number]) do
-        game.print(serpent.line(gui_child))
+        -- game.print(serpent.line(gui_child))
         root.add{
           type = "button",
-          name = "open-compound-entity-child-" .. (gui_child[1].unit_number or gui_child[1].name),
-          caption = {"", "Open ", {"entity-name." .. gui_child[1].name}, " gui"},
+          name = "open-compound-entity-child-" .. (gui_child.entity.unit_number or gui_child.entity.name),
+          caption = gui_child.info.gui_caption or {"", "Open ", {"entity-name." .. gui_child.entity.name}, " gui"},
           tags = {
             unit_number = entity.unit_number,
-            child_unit_number = gui_child[1].unit_number,
+            child_unit_number = gui_child.entity.unit_number,
           },
         }
       end
@@ -127,12 +135,10 @@ function lambda.register_compound_entities()
       if not storage.lambda_compound_entity_gui_pairs[event.element.tags.unit_number][event.element.tags.child_unit_number] then return end
 
       local gui_child = storage.lambda_compound_entity_gui_pairs[event.element.tags.unit_number][event.element.tags.child_unit_number]
-
-      game.print(serpent.block(gui_child))
   
       local gui_menu
-      if #gui_child > 1 then
-        gui_menu = lambda.get_compound_gui_function(gui_child[2])(gui_child[1])
+      if gui_child.info.gui_function_name then
+        gui_menu = lambda.get_compound_function(gui_child.info.gui_function_name)(gui_child.entity)
       else
         gui_menu = gui_child
       end
