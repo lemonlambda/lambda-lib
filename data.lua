@@ -6,4 +6,4 @@ require("prototypes.prototyping")
 require("prototypes.compound-entities")
 require("prototypes.smuggler")
 
-require("testing")
+require("prototypes.testing")

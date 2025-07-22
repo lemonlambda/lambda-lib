@@ -7,6 +7,16 @@ lambda.on_event(lambda.defines.events.on_init, function()
   end
 end)
 
+if not lambda._gui_functions then lambda._gui_functions = {} end
+
+function lambda.register_compound_gui_function(name, func)
+  lambda._gui_functions[name] = func
+end
+
+function lambda.get_compound_gui_function(name)
+  return lambda._gui_functions[name]
+end
+
 function lambda.register_compound_entities()
   local info = lambda.get_smuggled_data("compound-info")
 
@@ -38,7 +48,7 @@ function lambda.register_compound_entities()
 
         storage.lambda_compound_entity_pairs[event.entity.unit_number][new_entity.unit_number] = new_entity
         if info.enable_gui then
-          storage.lambda_compound_entity_gui_pairs[event.entity.unit_number][new_entity.unit_number] = new_entity
+          storage.lambda_compound_entity_gui_pairs[event.entity.unit_number][new_entity.unit_number] = {new_entity, info.gui_function_name}
         end
       end
     end)
@@ -59,7 +69,7 @@ function lambda.register_compound_entities()
         child = nil
       end
       for _, child in pairs(storage.lambda_compound_entity_gui_pairs[event.entity.unit_number]) do
-        if child and child.valid then
+        if child[1] and child[1].valid then
           child.destroy()
         end
 
@@ -94,14 +104,15 @@ function lambda.register_compound_entities()
       }
 
 
-      for _, info in pairs(storage.lambda_compound_entity_gui_pairs[event.entity.unit_number]) do
+      for _, gui_child in pairs(storage.lambda_compound_entity_gui_pairs[event.entity.unit_number]) do
+        game.print(serpent.line(gui_child))
         root.add{
           type = "button",
-          name = "open-compound-entity-child-" .. info.unit_number,
-          caption = {"", "Open ", {"entity-name." .. info.name}, " gui"},
+          name = "open-compound-entity-child-" .. (gui_child[1].unit_number or gui_child[1].name),
+          caption = {"", "Open ", {"entity-name." .. gui_child[1].name}, " gui"},
           tags = {
             unit_number = entity.unit_number,
-            child_unit_number = info.unit_number,
+            child_unit_number = gui_child[1].unit_number,
           },
         }
       end
@@ -112,9 +123,20 @@ function lambda.register_compound_entities()
     script.on_event(defines.events.on_gui_click, function(event)
       local player = game.players[event.player_index]
       if not ((string.find(event.element.name, "open-compound-entity-child", 1, true) or -1) >= 0) then return end
-      if not storage.lambda_compound_entity_pairs[event.element.tags.unit_number] then return end
+      if not storage.lambda_compound_entity_gui_pairs[event.element.tags.unit_number] then return end
+      if not storage.lambda_compound_entity_gui_pairs[event.element.tags.unit_number][event.element.tags.child_unit_number] then return end
 
-      player.opened = storage.lambda_compound_entity_pairs[event.element.tags.unit_number][event.element.tags.child_unit_number]
+      local gui_child = storage.lambda_compound_entity_gui_pairs[event.element.tags.unit_number][event.element.tags.child_unit_number]
+
+      game.print(serpent.block(gui_child))
+  
+      local gui_menu
+      if #gui_child > 1 then
+        gui_menu = lambda.get_compound_gui_function(gui_child[2])(gui_child[1])
+      else
+        gui_menu = gui_child
+      end
+      player.opened = gui_menu
     end)
   end
 end
